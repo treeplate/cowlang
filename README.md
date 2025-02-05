@@ -1,0 +1,1 @@
+notes: [Cowlang notes](https://docs.google.com/document/d/1jBb2ohLs_encwlUkp4AyLOV3C_OK5gZgwTSZnoHcvDs/edit?usp=sharing)
