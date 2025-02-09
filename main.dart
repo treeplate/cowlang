@@ -1,6 +1,9 @@
 import 'dart:io';
 
+import 'ast.dart';
 import 'lexer.dart';
+import 'parser.dart' hide Scope;
+import 'rtl.dart';
 
 void main(List<String> args) {
   if (args.isEmpty) {
@@ -12,5 +15,8 @@ void main(List<String> args) {
   }
   String filename = args.single;
   Iterable<Token> tokens = tokenize(File(filename).readAsStringSync(), filename);
-  print(tokens.toList());
+  Scope scope = Scope(rtl, '$filename', tokens.first, ['$filename (./$filename:1:1)']);
+  for (Statement statement in parseTokens(tokens, rtl.variables.keys.toList())) {
+    statement.run(scope);
+  }
 }

@@ -5,6 +5,8 @@ sealed class Token {
   final int column;
   final String file;
 
+  String get position => '$file:$line:$column';
+
   Token(this.line, this.column, this.file);
 }
 
@@ -13,7 +15,7 @@ class StringToken extends Token {
 
   StringToken(this.value, super.line, super.column, super.file);
   String toString() {
-    return '\'value\'';
+    return '\'$value\'';
   }
 }
 
@@ -51,6 +53,7 @@ enum SymbolType {
   and,
   verticalBar,
   caret,
+  lessThan,
 }
 
 class SymbolToken extends Token {
@@ -87,17 +90,24 @@ class SymbolToken extends Token {
         return '|';
       case SymbolType.caret:
         return '^';
+      case SymbolType.lessThan:
+        return '<';
     }
   }
 }
 
+class EofToken extends Token {
+  EofToken(super.line, super.column, super.file);
+  String toString() => '<eof>';
+}
+
 enum _LexerState { top, string, integer, identifier }
 
-Characters identifierEndings = "\t\r\n [](),+-*/%&|^".characters;
+Characters identifierEndings = "\t\r\n [](),+-*/%&|^<\x00".characters;
 Iterable<Token> tokenize(String file, String filename) sync* {
   int line = 1;
   int column = 1;
-  CharacterRange chars = file.characters.iterator..moveNext();
+  CharacterRange chars = (file + '\x00').characters.iterator..moveNext();
   _LexerState state = _LexerState.top;
   StringBuffer buffer = StringBuffer();
   void next() {
@@ -114,47 +124,53 @@ Iterable<Token> tokenize(String file, String filename) sync* {
     switch (state) {
       case _LexerState.top:
         switch (chars.current) {
+          case '\x00':
+            yield EofToken(line, column, filename);
+            next();
           case '[':
-            yield SymbolToken(SymbolType.opensquare, line, column, file);
+            yield SymbolToken(SymbolType.opensquare, line, column, filename);
             next();
           case ']':
-            yield SymbolToken(SymbolType.closesquare, line, column, file);
+            yield SymbolToken(SymbolType.closesquare, line, column, filename);
             next();
           case '(':
-            yield SymbolToken(SymbolType.openparen, line, column, file);
+            yield SymbolToken(SymbolType.openparen, line, column, filename);
             next();
           case ')':
-            yield SymbolToken(SymbolType.closeparen, line, column, file);
+            yield SymbolToken(SymbolType.closeparen, line, column, filename);
             next();
           case '#':
-            yield SymbolToken(SymbolType.octothorpe, line, column, file);
+            yield SymbolToken(SymbolType.octothorpe, line, column, filename);
             next();
           case ',':
-            yield SymbolToken(SymbolType.comma, line, column, file);
+            yield SymbolToken(SymbolType.comma, line, column, filename);
             next();
           case '+':
-            yield SymbolToken(SymbolType.plus, line, column, file);
+            yield SymbolToken(SymbolType.plus, line, column, filename);
             next();
           case '-':
-            yield SymbolToken(SymbolType.minus, line, column, file);
+            yield SymbolToken(SymbolType.minus, line, column, filename);
             next();
           case '*':
-            yield SymbolToken(SymbolType.star, line, column, file);
+            yield SymbolToken(SymbolType.star, line, column, filename);
             next();
           case '/':
-            yield SymbolToken(SymbolType.slash, line, column, file);
+            yield SymbolToken(SymbolType.slash, line, column, filename);
             next();
           case '%':
-            yield SymbolToken(SymbolType.percentSign, line, column, file);
+            yield SymbolToken(SymbolType.percentSign, line, column, filename);
             next();
           case '&':
-            yield SymbolToken(SymbolType.and, line, column, file);
+            yield SymbolToken(SymbolType.and, line, column, filename);
             next();
           case '|':
-            yield SymbolToken(SymbolType.verticalBar, line, column, file);
+            yield SymbolToken(SymbolType.verticalBar, line, column, filename);
             next();
           case '^':
-            yield SymbolToken(SymbolType.caret, line, column, file);
+            yield SymbolToken(SymbolType.caret, line, column, filename);
+            next();
+          case '<':
+            yield SymbolToken(SymbolType.lessThan, line, column, filename);
             next();
           case '\'':
             state = _LexerState.string;
@@ -165,7 +181,7 @@ Iterable<Token> tokenize(String file, String filename) sync* {
         }
       case _LexerState.string:
         if (chars.current == '\'') {
-          yield StringToken(buffer.toString(), line, column, file);
+          yield StringToken(buffer.toString(), line, column, filename);
           buffer.clear();
           state = _LexerState.top;
         } else {
@@ -177,7 +193,7 @@ Iterable<Token> tokenize(String file, String filename) sync* {
         throw UnimplementedError();
       case _LexerState.identifier:
         if (identifierEndings.contains(chars.current)) {
-          yield IdentifierToken(buffer.toString(), line, column, file);
+          yield IdentifierToken(buffer.toString(), line, column, filename);
           buffer.clear();
           state = _LexerState.top;
         } else {
