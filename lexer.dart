@@ -41,8 +41,6 @@ enum SymbolType {
   openparen,
   closeparen,
 
-  octothorpe,
-
   comma,
 
   plus,
@@ -70,8 +68,6 @@ class SymbolToken extends Token {
         return '(';
       case SymbolType.closeparen:
         return ')';
-      case SymbolType.octothorpe:
-        return '#';
       case SymbolType.comma:
         return ',';
       case SymbolType.plus:
@@ -103,7 +99,7 @@ class EofToken extends Token {
 
 enum _LexerState { top, string, integer, identifier }
 
-Characters identifierEndings = "\t\r\n [](),+-*/%&|^<\x00".characters;
+Characters identifierEndings = " \t\r\n[](),+-*/%&|^<\x00".characters;
 Iterable<Token> tokenize(String file, String filename) sync* {
   int line = 1;
   int column = 1;
@@ -111,13 +107,13 @@ Iterable<Token> tokenize(String file, String filename) sync* {
   _LexerState state = _LexerState.top;
   StringBuffer buffer = StringBuffer();
   void next() {
-    chars.moveNext();
     if (chars.current == '\n') {
       line++;
       column = 1;
     } else {
       column++;
     }
+    chars.moveNext();
   }
 
   while (chars.isNotEmpty) {
@@ -138,9 +134,6 @@ Iterable<Token> tokenize(String file, String filename) sync* {
             next();
           case ')':
             yield SymbolToken(SymbolType.closeparen, line, column, filename);
-            next();
-          case '#':
-            yield SymbolToken(SymbolType.octothorpe, line, column, filename);
             next();
           case ',':
             yield SymbolToken(SymbolType.comma, line, column, filename);
@@ -175,8 +168,13 @@ Iterable<Token> tokenize(String file, String filename) sync* {
           case '\'':
             state = _LexerState.string;
             next();
+          case ' ':
+          case '\t':
+          case '\r':
+          case '\n':
+            next();
           default:
-            assert(!identifierEndings.contains(chars.current));
+            assert(!identifierEndings.contains(chars.current), chars.current);
             state = _LexerState.identifier;
         }
       case _LexerState.string:

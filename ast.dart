@@ -7,14 +7,21 @@ class Scope {
   final Token start;
   final List<String> stackTrace;
 
-  Scope(this.parent, this.name, this.start, List<String> stackTrace) : stackTrace = stackTrace..add('$name (./${start.position})');
+  Scope(this.parent, this.name, this.start, List<String> stackTrace)
+    : stackTrace = stackTrace..add('$name (./${start.position})');
 
   final Map<String, Object?> variables = {};
 
   Object? getVariable(String variable) {
+    assert(parent != null || variables.containsKey(variable));
     return variables.containsKey(variable)
         ? variables[variable]
         : parent?.getVariable(variable);
+  }
+
+  void declareVariable(String variable, Object? value) {
+    assert (!variables.containsKey(variable));
+    variables[variable] = value;
   }
 }
 
@@ -54,15 +61,15 @@ class OrExpression extends Expression {
     final Object? lhsValue = lhs.eval(scope);
     final Object? rhsValue = rhs.eval(scope);
     if (lhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'lhs of or is not integer (is $lhsValue)',
-        lhs.start,
+        scope.stackTrace,
       );
     }
     if (rhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'rhs of or is not integer (is $rhsValue)',
-        rhs.start,
+        scope.stackTrace,
       );
     }
     return lhsValue | rhsValue;
@@ -82,15 +89,15 @@ class XorExpression extends Expression {
     final Object? lhsValue = lhs.eval(scope);
     final Object? rhsValue = rhs.eval(scope);
     if (lhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'lhs of xor is not integer (is $lhsValue)',
-        lhs.start,
+        scope.stackTrace,
       );
     }
     if (rhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'rhs of xor is not integer (is $rhsValue)',
-        rhs.start,
+        scope.stackTrace,
       );
     }
     return lhsValue ^ rhsValue;
@@ -110,15 +117,15 @@ class AndExpression extends Expression {
     final Object? lhsValue = lhs.eval(scope);
     final Object? rhsValue = rhs.eval(scope);
     if (lhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'lhs of and is not integer (is $lhsValue)',
-        lhs.start,
+        scope.stackTrace,
       );
     }
     if (rhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'rhs of and is not integer (is $rhsValue)',
-        rhs.start,
+        scope.stackTrace,
       );
     }
     return lhsValue & rhsValue;
@@ -138,15 +145,15 @@ class MultiplyExpression extends Expression {
     final Object? lhsValue = lhs.eval(scope);
     final Object? rhsValue = rhs.eval(scope);
     if (lhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'lhs of multiply is not integer (is $lhsValue)',
-        lhs.start,
+        scope.stackTrace,
       );
     }
     if (rhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'rhs of multiply is not integer (is $rhsValue)',
-        rhs.start,
+        scope.stackTrace,
       );
     }
     return lhsValue * rhsValue;
@@ -165,15 +172,15 @@ class DivideExpression extends Expression {
     final Object? lhsValue = lhs.eval(scope);
     final Object? rhsValue = rhs.eval(scope);
     if (lhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'lhs of divide is not integer (is $lhsValue)',
-        lhs.start,
+        scope.stackTrace,
       );
     }
     if (rhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'rhs of divide is not integer (is $rhsValue)',
-        rhs.start,
+        scope.stackTrace,
       );
     }
     return lhsValue / rhsValue;
@@ -192,15 +199,15 @@ class ModulusExpression extends Expression {
     final Object? lhsValue = lhs.eval(scope);
     final Object? rhsValue = rhs.eval(scope);
     if (lhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'lhs of modulus is not integer (is $lhsValue)',
-        lhs.start,
+        scope.stackTrace,
       );
     }
     if (rhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'rhs of modulus is not integer (is $rhsValue)',
-        rhs.start,
+        scope.stackTrace,
       );
     }
     return lhsValue % rhsValue;
@@ -219,15 +226,15 @@ class AddExpression extends Expression {
     final Object? lhsValue = lhs.eval(scope);
     final Object? rhsValue = rhs.eval(scope);
     if (lhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'lhs of add is not integer (is $lhsValue)',
-        lhs.start,
+        scope.stackTrace,
       );
     }
     if (rhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'rhs of add is not integer (is $rhsValue)',
-        rhs.start,
+        scope.stackTrace,
       );
     }
     return lhsValue + rhsValue;
@@ -246,15 +253,15 @@ class SubtractExpression extends Expression {
     final Object? lhsValue = lhs.eval(scope);
     final Object? rhsValue = rhs.eval(scope);
     if (lhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'lhs of subtract is not integer (is $lhsValue)',
-        lhs.start,
+        scope.stackTrace,
       );
     }
     if (rhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'rhs of subtract is not integer (is $rhsValue)',
-        rhs.start,
+        scope.stackTrace,
       );
     }
     return lhsValue - rhsValue;
@@ -273,15 +280,15 @@ class IndexExpression extends Expression {
     final Object? lhsValue = lhs.eval(scope);
     final Object? rhsValue = rhs.eval(scope);
     if (lhsValue is! List) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'lhs of index is not list (is $lhsValue)',
-        lhs.start,
+        scope.stackTrace,
       );
     }
     if (rhsValue is! int) {
-      throwCompileTimeException(
+      throwRuntimeException(
         'rhs of index is not integer (is $rhsValue)',
-        rhs.start,
+        scope.stackTrace,
       );
     }
     return lhsValue[rhsValue];
@@ -299,9 +306,9 @@ class CallExpression extends Expression {
   Object? eval(Scope scope) {
     final Object? lhsValue = lhs.eval(scope);
     if (lhsValue is! CowFunction) {
-      throwCompileTimeException(
-        'lhs of call is not function (is $lhsValue)',
-        lhs.start,
+      throwRuntimeException(
+        'lhs of call is not function (is $lhsValue) at ./${lhs.start.position}',
+        scope.stackTrace,
       );
     }
     return lhsValue(args.map((e) => e.eval(scope)).toList(), scope.stackTrace);
@@ -310,12 +317,11 @@ class CallExpression extends Expression {
 
 class VariableExpression extends Expression {
   final IdentifierToken token;
-  String get variable => token.value;
-  String toString() => variable;
+  String toString() => token.value;
 
   VariableExpression(this.token) : super(token);
 
-  Object? eval(Scope scope) => scope.getVariable(variable);
+  Object? eval(Scope scope) => scope.getVariable(token.value);
 
   @override
   bool get isAssignable => true;
@@ -323,13 +329,23 @@ class VariableExpression extends Expression {
 
 class StringExpression extends Expression {
   final StringToken token;
-  String get string => token.value;
-  String toString() => '\'variable\'';
+  String toString() => '\'${token.value}\'';
 
   StringExpression(this.token) : super(token);
 
-  Object? eval(Scope scope) => string.runes.toList();
+  Object? eval(Scope scope) => token.value.runes.toList();
 
   @override
   bool get isAssignable => true;
+}
+
+class VariableDeclarationStatement extends Statement {
+  final String name;
+  final Expression value;
+
+  VariableDeclarationStatement(super.start, this.name, this.value);
+  @override
+  void run(Scope scope) {
+    scope.declareVariable(name, value.eval(scope));
+  }
 }

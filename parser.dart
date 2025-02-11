@@ -85,6 +85,8 @@ Statement parseStatement(TokenIterator tokens, Scope scope) {
   Token startToken = tokens.current;
   String? identifier = tokens.getIdentifier();
   switch (identifier) {
+    case 'def':
+      return parseDeclaration(tokens, scope, startToken);
     default:
       return parseNonKeywordStatement(
         tokens,
@@ -92,6 +94,25 @@ Statement parseStatement(TokenIterator tokens, Scope scope) {
         identifier == null ? null : startToken,
       );
   }
+}
+
+Statement parseDeclaration(TokenIterator tokens, Scope scope, Token startToken) {
+  String? name = tokens.getIdentifier();
+  if (name == null) {
+    throwCompileTimeException('expected identifier, but got ${tokens.current}', tokens.current);
+  }
+  if(!
+  scope.declare(name)) {
+    throwCompileTimeException('duplicate variable $name', tokens.current);
+  }
+  if (tokens.getSymbol(SymbolType.openparen)) {
+    throw UnimplementedError('functions');
+  }
+  if (!tokens.getSymbol(SymbolType.lessThan)) {
+    throwCompileTimeException('expected ( or < after "def $name", but got ${tokens.current}', tokens.current);
+  }
+  Expression value = parseExpression(tokens, scope);
+  return VariableDeclarationStatement(startToken, name, value);
 }
 
 Statement parseNonKeywordStatement(

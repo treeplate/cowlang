@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'ast.dart';
 import 'lexer.dart';
 
@@ -18,10 +16,7 @@ final Map<String, Object?> rtlVariables = {
     }
     Object? arg = args.single;
     if (arg is! List) {
-      throwRuntimeException(
-        'error: print expects list, got $arg',
-        stackTrace,
-      );
+      throwRuntimeException('error: print expects list, got $arg', stackTrace);
     }
     if (arg.any((e) => e is! int)) {
       throwRuntimeException(
