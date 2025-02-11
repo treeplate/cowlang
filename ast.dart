@@ -23,6 +23,15 @@ class Scope {
     assert (!variables.containsKey(variable));
     variables[variable] = value;
   }
+
+  void assign(String variable, Object? value) {
+    assert (parent != null || variables.containsKey(variable));
+    if (variables.containsKey(variable)) {
+    variables[variable] = value;
+    } else {
+      parent?.assign(variable, value);
+    }
+  }
 }
 
 typedef CowFunction = Object? Function(List<Object?>, List<String> stackTrace);
@@ -44,6 +53,13 @@ abstract class Expression extends Statement {
   bool get isAssignable;
   void run(Scope scope) => eval(scope);
   Object? eval(Scope scope);
+  void assignTo(Expression value, Scope scope) {
+    if (isAssignable) {
+      throw UnimplementedError('${runtimeType}.assignTo');
+    } else {
+      throw UnsupportedError('${runtimeType}.assignTo ($runtimeType is not assignable)');
+    }
+  }
 
   Expression(super.start);
 }
@@ -183,7 +199,7 @@ class DivideExpression extends Expression {
         scope.stackTrace,
       );
     }
-    return lhsValue / rhsValue;
+    return lhsValue ~/ rhsValue;
   }
 }
 
@@ -325,6 +341,10 @@ class VariableExpression extends Expression {
 
   @override
   bool get isAssignable => true;
+
+  void assignTo(Expression value, Scope scope) {
+    scope.assign(token.value, value.eval(scope));
+  }
 }
 
 class StringExpression extends Expression {
@@ -336,7 +356,7 @@ class StringExpression extends Expression {
   Object? eval(Scope scope) => token.value.runes.toList();
 
   @override
-  bool get isAssignable => true;
+  bool get isAssignable => false;
 }
 
 class VariableDeclarationStatement extends Statement {
@@ -347,5 +367,18 @@ class VariableDeclarationStatement extends Statement {
   @override
   void run(Scope scope) {
     scope.declareVariable(name, value.eval(scope));
+  }
+}
+
+class AssignmentStatement extends Statement {
+  final Expression lhs;
+  final Expression rhs;
+
+  AssignmentStatement(this.lhs, this.rhs):super(lhs.start) {
+    assert(lhs.isAssignable);
+  }
+  @override
+  void run(Scope scope) {
+    lhs.assignTo(rhs, scope);
   }
 }

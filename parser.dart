@@ -121,10 +121,17 @@ Statement parseNonKeywordStatement(
   Token? startToken = null,
 ]) {
   Expression lhs = parseExpression(tokens, scope, startToken);
-  if (!lhs.isAssignable) {
+  if (!tokens.getSymbol(SymbolType.lessThan)) {
     return lhs;
   }
-  throw UnimplementedError('assigning to expressions');
+  if (!lhs.isAssignable) {
+    throwCompileTimeException('Tried to assign to unassignable expression $lhs', lhs.start);
+  }
+  if (lhs is VariableExpression && !scope.exists(lhs.token.value)) {
+    throwCompileTimeException('Tried to assign to nonexistent variable $lhs', lhs.start);
+  }
+  Expression rhs = parseExpression(tokens, scope);
+  return AssignmentStatement(lhs, rhs);
 }
 
 Expression parseExpression(

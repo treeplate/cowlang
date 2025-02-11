@@ -1,0 +1,3 @@
+def var < 'FAIL'
+var < 'PASS'
+print(var)
