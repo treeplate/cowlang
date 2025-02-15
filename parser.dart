@@ -65,7 +65,7 @@ class Scope {
     return declarations.contains(name) ? true : parent?.exists(name) ?? false;
   }
 
-  Scope child() => Scope(parent);
+  Scope child() => Scope(this);
 
   Scope(this.parent);
 }
@@ -96,20 +96,51 @@ Statement parseStatement(TokenIterator tokens, Scope scope) {
   }
 }
 
-Statement parseDeclaration(TokenIterator tokens, Scope scope, Token startToken) {
+Statement parseDeclaration(
+  TokenIterator tokens,
+  Scope scope,
+  Token startToken,
+) {
   String? name = tokens.getIdentifier();
   if (name == null) {
-    throwCompileTimeException('expected identifier, but got ${tokens.current}', tokens.current);
+    throwCompileTimeException(
+      'expected identifier, but got ${tokens.current}',
+      tokens.current,
+    );
   }
-  if(!
-  scope.declare(name)) {
+  if (!scope.declare(name)) {
     throwCompileTimeException('duplicate variable $name', tokens.current);
   }
   if (tokens.getSymbol(SymbolType.openparen)) {
-    throw UnimplementedError('functions');
+    List<String> args = [];
+    while (!tokens.getSymbol(SymbolType.closeparen)) {
+      String? arg = tokens.getIdentifier();
+      if (arg == null) {
+        throwCompileTimeException(
+          'expected identifier, got ${tokens.current}',
+          tokens.current,
+        );
+      }
+      args.add(arg);
+    }
+    List<Statement> body = [];
+    Scope funcScope = scope.child();
+    for (String arg in args) {
+      funcScope.declare(arg);
+    }
+    funcScope.declare('result');
+    while (tokens.current is! IdentifierToken ||
+        (tokens.current as IdentifierToken).value != 'end') {
+      body.add(parseStatement(tokens, funcScope));
+    }
+    tokens.moveNext();
+    return FunctionStatement(name, args, body, startToken);
   }
   if (!tokens.getSymbol(SymbolType.lessThan)) {
-    throwCompileTimeException('expected ( or < after "def $name", but got ${tokens.current}', tokens.current);
+    throwCompileTimeException(
+      'expected ( or < after "def $name", but got ${tokens.current}',
+      tokens.current,
+    );
   }
   Expression value = parseExpression(tokens, scope);
   return VariableDeclarationStatement(startToken, name, value);
@@ -125,10 +156,16 @@ Statement parseNonKeywordStatement(
     return lhs;
   }
   if (!lhs.isAssignable) {
-    throwCompileTimeException('Tried to assign to unassignable expression $lhs', lhs.start);
+    throwCompileTimeException(
+      'Tried to assign to unassignable expression $lhs',
+      lhs.start,
+    );
   }
   if (lhs is VariableExpression && !scope.exists(lhs.token.value)) {
-    throwCompileTimeException('Tried to assign to nonexistent variable $lhs', lhs.start);
+    throwCompileTimeException(
+      'Tried to assign to nonexistent variable $lhs',
+      lhs.start,
+    );
   }
   Expression rhs = parseExpression(tokens, scope);
   return AssignmentStatement(lhs, rhs);
@@ -232,7 +269,6 @@ Expression parseIndexCall(
   }
   if (tokens.getSymbol(SymbolType.openparen)) {
     List<Expression> args = [];
-    args.add(parseExpression(tokens, scope, null));
     while (!tokens.getSymbol(SymbolType.closeparen)) {
       args.add(parseExpression(tokens, scope, null));
     }
@@ -255,6 +291,8 @@ Expression parseBasicExpression(
       return VariableExpression(token);
     case StringToken():
       return StringExpression(token);
+    case IntegerToken():
+      return IntegerExpression(token);
     default:
       throw UnimplementedError('basic $token');
   }

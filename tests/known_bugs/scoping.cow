@@ -1,0 +1,9 @@
+def var < 'PASS'
+def outer()
+  def inner()
+    print(var)
+  end
+  def var < 'FAIL'
+  inner()
+end
+outer()

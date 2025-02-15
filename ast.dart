@@ -20,24 +20,30 @@ class Scope {
   }
 
   void declareVariable(String variable, Object? value) {
-    assert (!variables.containsKey(variable));
+    assert(!variables.containsKey(variable));
     variables[variable] = value;
   }
 
   void assign(String variable, Object? value) {
-    assert (parent != null || variables.containsKey(variable));
+    assert(parent != null || variables.containsKey(variable));
     if (variables.containsKey(variable)) {
-    variables[variable] = value;
+      variables[variable] = value;
     } else {
       parent?.assign(variable, value);
     }
+  }
+
+  Scope child(String name, Token start) => Scope(this, name, start, stackTrace);
+
+  void end() => stackTrace.removeLast();
+
+  void setStackTracePosition(Token position) {
+    stackTrace.last.replaceAll(RegExp('\\(.*\\)'), '(${position.position})');
   }
 }
 
 typedef CowFunction = Object? Function(List<Object?>, List<String> stackTrace);
 
-Never throwCompileTimeException(String message, Token token) =>
-    throw Exception('$message (./${token.position})');
 Never throwRuntimeException(String message, List<String> stackTrace) =>
     throw Exception('$message\n${stackTrace.reversed.join('\n')}');
 
@@ -57,7 +63,9 @@ abstract class Expression extends Statement {
     if (isAssignable) {
       throw UnimplementedError('${runtimeType}.assignTo');
     } else {
-      throw UnsupportedError('${runtimeType}.assignTo ($runtimeType is not assignable)');
+      throw UnsupportedError(
+        '${runtimeType}.assignTo ($runtimeType is not assignable)',
+      );
     }
   }
 
@@ -327,6 +335,7 @@ class CallExpression extends Expression {
         scope.stackTrace,
       );
     }
+    scope.setStackTracePosition(start);
     return lhsValue(args.map((e) => e.eval(scope)).toList(), scope.stackTrace);
   }
 }
@@ -359,6 +368,18 @@ class StringExpression extends Expression {
   bool get isAssignable => false;
 }
 
+class IntegerExpression extends Expression {
+  final IntegerToken token;
+  String toString() => token.value.toString();
+
+  IntegerExpression(this.token) : super(token);
+
+  Object? eval(Scope scope) => token.value;
+
+  @override
+  bool get isAssignable => false;
+}
+
 class VariableDeclarationStatement extends Statement {
   final String name;
   final Expression value;
@@ -374,11 +395,43 @@ class AssignmentStatement extends Statement {
   final Expression lhs;
   final Expression rhs;
 
-  AssignmentStatement(this.lhs, this.rhs):super(lhs.start) {
+  AssignmentStatement(this.lhs, this.rhs) : super(lhs.start) {
     assert(lhs.isAssignable);
   }
   @override
   void run(Scope scope) {
     lhs.assignTo(rhs, scope);
+  }
+}
+
+class FunctionStatement extends Statement {
+  final String name;
+  final List<String> params;
+  final List<Statement> body;
+
+  FunctionStatement(this.name, this.params, this.body, super.start);
+
+  @override
+  void run(Scope scope) {
+    scope.declareVariable(name, (List<Object?> args, List<String> stack) {
+      Scope funcScope = scope.child('$name', start);
+      if (args.length < params.length) {
+        throwRuntimeException('Not enough arguments provided to $name', funcScope.stackTrace);
+      }
+      if (args.length > params.length) {
+        throwRuntimeException('Too many arguments provided to $name', funcScope.stackTrace);
+      }
+      int i = 0;
+      while (i < params.length) {
+        funcScope.declareVariable(params[i], args[i]);
+        i++;
+      }
+      funcScope.declareVariable('result', null);
+      for (Statement statement in body) {
+        statement.run(funcScope);
+      }
+      funcScope.end();
+      return funcScope.getVariable('result');
+    });
   }
 }

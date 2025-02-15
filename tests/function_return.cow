@@ -1,0 +1,2 @@
+def func() result < 'PASS' end
+print(func())

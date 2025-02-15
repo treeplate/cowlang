@@ -32,6 +32,8 @@ class IdentifierToken extends Token {
 class IntegerToken extends Token {
   final int value;
 
+  String toString() => value.toString();
+
   IntegerToken(this.value, super.line, super.column, super.file);
 }
 
@@ -97,17 +99,29 @@ class EofToken extends Token {
   String toString() => '<eof>';
 }
 
-enum _LexerState { top, string, integer, identifier }
+Never throwCompileTimeException(String message, Token token) =>
+    throw Exception('$message (./${token.position})');
 
-Characters identifierEndings = " \t\r\n[](),+-*/%&|^<\x00".characters;
+enum _LexerState {
+  top,
+  string,
+  integer,
+  identifier,
+  slash,
+  comment,
+  commentEscape,
+}
+
+Characters identifierEndings = " \t\n\r\n[](),+-*/%&|^<\x00".characters;
 Iterable<Token> tokenize(String file, String filename) sync* {
   int line = 1;
   int column = 1;
   CharacterRange chars = (file + '\x00').characters.iterator..moveNext();
   _LexerState state = _LexerState.top;
   StringBuffer buffer = StringBuffer();
+  int intBuffer = 0;
   void next() {
-    if (chars.current == '\n') {
+    if (chars.current.endsWith('\n')) {
       line++;
       column = 1;
     } else {
@@ -148,7 +162,7 @@ Iterable<Token> tokenize(String file, String filename) sync* {
             yield SymbolToken(SymbolType.star, line, column, filename);
             next();
           case '/':
-            yield SymbolToken(SymbolType.slash, line, column, filename);
+            state = _LexerState.slash;
             next();
           case '%':
             yield SymbolToken(SymbolType.percentSign, line, column, filename);
@@ -173,10 +187,39 @@ Iterable<Token> tokenize(String file, String filename) sync* {
           case '\r':
           case '\n':
             next();
+          case '0':
+          case '1':
+          case '2':
+          case '3':
+          case '4':
+          case '5':
+          case '6':
+          case '7':
+          case '8':
+          case '9':
+            state = _LexerState.integer;
           default:
             assert(!identifierEndings.contains(chars.current), chars.current);
             state = _LexerState.identifier;
         }
+      case _LexerState.slash:
+        if (chars.current == '/') {
+          state = _LexerState.comment;
+          next();
+        } else {
+          yield SymbolToken(SymbolType.slash, line, column, file);
+          state = _LexerState.top;
+        }
+      case _LexerState.comment:
+        if (chars.current == '\\') {
+          state = _LexerState.commentEscape;
+        } else if (chars.current.endsWith('\n')) {
+          state = _LexerState.top;
+        }
+        next();
+      case _LexerState.commentEscape:
+        state = _LexerState.comment;
+        next();
       case _LexerState.string:
         if (chars.current == '\'') {
           yield StringToken(buffer.toString(), line, column, filename);
@@ -187,8 +230,29 @@ Iterable<Token> tokenize(String file, String filename) sync* {
         }
         next();
       case _LexerState.integer:
-        // TODO: Handle this case.
-        throw UnimplementedError();
+        if ('0123456789'.contains(chars.current)) {
+          int start = intBuffer;
+          intBuffer *= 10;
+          if (intBuffer ~/ 10 != start) {
+            throwCompileTimeException(
+              'integer too big for 63 bits',
+              IntegerToken(intBuffer, line, column, file),
+            );
+          }
+          intBuffer += chars.current.codeUnits.single - 0x30;
+
+          if (intBuffer < 0) {
+            throwCompileTimeException(
+              'integer too big for 63 bits',
+              IntegerToken(intBuffer, line, column, file),
+            );
+          }
+          next();
+        } else {
+          yield IntegerToken(intBuffer, line, column, file);
+          intBuffer = 0;
+          state = _LexerState.top;
+        }
       case _LexerState.identifier:
         if (identifierEndings.contains(chars.current)) {
           yield IdentifierToken(buffer.toString(), line, column, filename);
