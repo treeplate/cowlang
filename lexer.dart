@@ -186,6 +186,7 @@ Iterable<Token> tokenize(String file, String filename) sync* {
           case '\t':
           case '\r':
           case '\n':
+          case '\r\n':
             next();
           case '0':
           case '1':

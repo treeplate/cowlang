@@ -416,10 +416,16 @@ class FunctionStatement extends Statement {
     scope.declareVariable(name, (List<Object?> args, List<String> stack) {
       Scope funcScope = scope.child('$name', start);
       if (args.length < params.length) {
-        throwRuntimeException('Not enough arguments provided to $name', funcScope.stackTrace);
+        throwRuntimeException(
+          'Not enough arguments provided to $name',
+          funcScope.stackTrace,
+        );
       }
       if (args.length > params.length) {
-        throwRuntimeException('Too many arguments provided to $name', funcScope.stackTrace);
+        throwRuntimeException(
+          'Too many arguments provided to $name',
+          funcScope.stackTrace,
+        );
       }
       int i = 0;
       while (i < params.length) {
@@ -433,5 +439,23 @@ class FunctionStatement extends Statement {
       funcScope.end();
       return funcScope.getVariable('result');
     });
+  }
+}
+
+class IfStatement extends Statement {
+  final Expression condition;
+  final List<Statement> body;
+
+  IfStatement(this.condition, this.body, super.start);
+
+  @override
+  void run(Scope scope) {
+    if (condition.eval(scope) == 0) {
+      Scope ifScope = scope.child('if statement', start);
+      for (Statement statement in body) {
+        statement.run(ifScope);
+      }
+      ifScope.end();
+    }
   }
 }

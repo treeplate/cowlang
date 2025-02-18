@@ -51,7 +51,7 @@ class TokenIterator implements Iterator<Token> {
 
 class Scope {
   final Scope? parent;
-  final List<String> declarations = [];
+  final Set<String> declarations = {};
 
   bool declare(String name) {
     if (declarations.contains(name)) {
@@ -70,7 +70,7 @@ class Scope {
   Scope(this.parent);
 }
 
-List<Statement> parseTokens(Iterable<Token> tokens, List<String> rtl) {
+List<Statement> parseTokens(Iterable<Token> tokens, Set<String> rtl) {
   TokenIterator tokenIterator = TokenIterator(tokens.iterator);
   Scope rtlScope = Scope(null)..declarations.addAll(rtl);
   Scope rootScope = Scope(rtlScope);
@@ -87,6 +87,8 @@ Statement parseStatement(TokenIterator tokens, Scope scope) {
   switch (identifier) {
     case 'def':
       return parseDeclaration(tokens, scope, startToken);
+    case 'if':
+      return parseIf(tokens, scope, startToken);
     default:
       return parseNonKeywordStatement(
         tokens,
@@ -94,6 +96,18 @@ Statement parseStatement(TokenIterator tokens, Scope scope) {
         identifier == null ? null : startToken,
       );
   }
+}
+
+IfStatement parseIf(TokenIterator tokens, Scope scope, Token startToken) {
+  Expression condition = parseExpression(tokens, scope);
+  Scope funcScope = scope.child();
+  List<Statement> body = [];
+  while (tokens.current is! IdentifierToken ||
+      (tokens.current as IdentifierToken).value != 'end') {
+    body.add(parseStatement(tokens, funcScope));
+  }
+  tokens.moveNext();
+  return IfStatement(condition, body, startToken);
 }
 
 Statement parseDeclaration(
