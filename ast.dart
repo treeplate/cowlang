@@ -459,3 +459,21 @@ class IfStatement extends Statement {
     }
   }
 }
+
+class LoopStatement extends Statement {
+  final Expression condition;
+  final List<Statement> body;
+
+  LoopStatement(this.condition, this.body, super.start);
+
+  @override
+  void run(Scope scope) {
+    while (condition.eval(scope) == 0) {
+      Scope whileScope = scope.child('while statement', start);
+      for (Statement statement in body) {
+        statement.run(whileScope);
+      }
+      whileScope.end();
+    }
+  }
+}

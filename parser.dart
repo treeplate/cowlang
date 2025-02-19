@@ -89,6 +89,8 @@ Statement parseStatement(TokenIterator tokens, Scope scope) {
       return parseDeclaration(tokens, scope, startToken);
     case 'if':
       return parseIf(tokens, scope, startToken);
+    case 'loop':
+      return parseLoop(tokens, scope, startToken);
     default:
       return parseNonKeywordStatement(
         tokens,
@@ -108,6 +110,18 @@ IfStatement parseIf(TokenIterator tokens, Scope scope, Token startToken) {
   }
   tokens.moveNext();
   return IfStatement(condition, body, startToken);
+}
+
+LoopStatement parseLoop(TokenIterator tokens, Scope scope, Token startToken) {
+  Expression condition = parseExpression(tokens, scope);
+  Scope funcScope = scope.child();
+  List<Statement> body = [];
+  while (tokens.current is! IdentifierToken ||
+      (tokens.current as IdentifierToken).value != 'end') {
+    body.add(parseStatement(tokens, funcScope));
+  }
+  tokens.moveNext();
+  return LoopStatement(condition, body, startToken);
 }
 
 Statement parseDeclaration(
@@ -274,20 +288,25 @@ Expression parseIndexCall(
 ]) {
   Token _startToken = startToken ?? tokens.current;
   Expression lhs = parseBasicExpression(tokens, scope, startToken);
-  if (tokens.getSymbol(SymbolType.opensquare)) {
-    Expression rhs = parseExpression(tokens, scope, null);
-    if (!tokens.getSymbol(SymbolType.closesquare)) {
-      throw UnimplementedError('error message for no closesquare');
+  do {
+    if (tokens.getSymbol(SymbolType.opensquare)) {
+      Expression rhs = parseExpression(tokens, scope, null);
+      if (!tokens.getSymbol(SymbolType.closesquare)) {
+        throw UnimplementedError('error message for no closesquare');
+      }
+      lhs = IndexExpression(_startToken, lhs, rhs);
+      continue;
     }
-    return IndexExpression(_startToken, lhs, rhs);
-  }
-  if (tokens.getSymbol(SymbolType.openparen)) {
-    List<Expression> args = [];
-    while (!tokens.getSymbol(SymbolType.closeparen)) {
-      args.add(parseExpression(tokens, scope, null));
+    if (tokens.getSymbol(SymbolType.openparen)) {
+      List<Expression> args = [];
+      while (!tokens.getSymbol(SymbolType.closeparen)) {
+        args.add(parseExpression(tokens, scope, null));
+      }
+      lhs = CallExpression(_startToken, lhs, args);
+      continue;
     }
-    return CallExpression(_startToken, lhs, args);
-  }
+    break;
+  } while (true);
   return lhs;
 }
 
@@ -307,6 +326,19 @@ Expression parseBasicExpression(
       return StringExpression(token);
     case IntegerToken():
       return IntegerExpression(token);
+    case SymbolToken(type: SymbolType type):
+      if (type != SymbolType.openparen) {
+        continue defaultLabel;
+      }
+      Expression expr = parseExpression(tokens, scope);
+      if (!tokens.getSymbol(SymbolType.closeparen)) {
+        throwCompileTimeException(
+          'expected ), got ${tokens.current}',
+          tokens.current,
+        );
+      }
+      return expr;
+    defaultLabel:
     default:
       throw UnimplementedError('basic $token');
   }

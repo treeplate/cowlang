@@ -1,17 +1,1 @@
-def num < random(100) + 1
-def compare()
-  def num2 < strToInt(input())
-  if positive(num2-num) print('Too big.') end
-  if positive(num-num2) print('Too small.') end
-  if num-num2 print('Correct!') end
-end
-compare()
-compare()
-compare()
-compare()
-compare()
-compare()
-compare()
-compare()
-compare()
-compare()
+print(split(readFile('parser.dart') 10)[0])
