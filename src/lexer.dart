@@ -248,7 +248,7 @@ Iterable<Token> tokenize(String file, String filename) sync* {
           if (intBuffer ~/ 10 != start) {
             throwCompileTimeException(
               'integer too big for 63 bits',
-              IntegerToken(intBuffer, line, column, file),
+              IntegerToken(intBuffer, line, column, filename),
             );
           }
           intBuffer += chars.current.codeUnits.single - 0x30;
@@ -256,12 +256,12 @@ Iterable<Token> tokenize(String file, String filename) sync* {
           if (intBuffer < 0) {
             throwCompileTimeException(
               'integer too big for 63 bits',
-              IntegerToken(intBuffer, line, column, file),
+              IntegerToken(intBuffer, line, column, filename),
             );
           }
           next();
         } else {
-          yield IntegerToken(intBuffer, line, column, file);
+          yield IntegerToken(intBuffer, line, column, filename);
           intBuffer = 0;
           state = _LexerState.top;
         }

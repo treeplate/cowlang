@@ -38,7 +38,7 @@ class Scope {
   void end() => stackTrace.removeLast();
 
   void setStackTracePosition(Token position) {
-    stackTrace.last.replaceAll(RegExp('\\(.*\\)'), '(${position.position})');
+    stackTrace.add(stackTrace.removeLast().replaceAll(RegExp('\\(.*\\)'), '(./${position.position})'));
   }
 }
 
@@ -340,6 +340,32 @@ class IndexExpression extends Expression {
     }
     try {
       return lhsValue[rhsValue];
+    } catch (error) {
+      throwRuntimeException(error.toString(), scope.stackTrace, rhs.start);
+    }
+  }
+
+  @override
+  void assignTo(Expression value, Scope scope) {
+    final Object? lhsValue = lhs.eval(scope);
+    final Object? rhsValue = rhs.eval(scope);
+    if (lhsValue is! List) {
+      throwRuntimeException(
+        'lhs of index is not list (is $lhsValue)',
+        scope.stackTrace,
+        lhs.start,
+      );
+    }
+    if (rhsValue is! int) {
+      throwRuntimeException(
+        'rhs of index is not integer (is $rhsValue)',
+        scope.stackTrace,
+        rhs.start,
+      );
+    }
+    Object? valueValue = value.eval(scope);
+    try {
+      lhsValue[rhsValue] = valueValue;
     } catch (error) {
       throwRuntimeException(error.toString(), scope.stackTrace, rhs.start);
     }

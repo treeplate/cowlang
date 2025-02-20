@@ -222,4 +222,24 @@ final Map<String, Object?> rtlVariables = {
     stackTrace.removeLast();
     return arg.length;
   },
+  'list': (List<Object?> args, List<String> stackTrace) {
+    stackTrace.add('list (./rtl.dart:205:1)');
+    if (args.length != 1) {
+      throwRuntimeException(
+        'error: list expects 1 argument, got ${args.length}',
+        stackTrace,
+        null,
+      );
+    }
+    Object? arg = args.first;
+    if (arg is! int) {
+      throwRuntimeException(
+        'error: list expects int, got $arg',
+        stackTrace,
+        null,
+      );
+    }
+    stackTrace.removeLast();
+    return List<Object?>.filled(arg, 0);
+  },
 };
