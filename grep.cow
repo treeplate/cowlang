@@ -8,6 +8,7 @@ loop positive(length(file) - line#)
   def strIndex < 0
   def lineIndex < 0
   loop positive(length(line) - lineIndex)
+    def original# < strIndex
     if line[lineIndex] - str[strIndex]
       strIndex < strIndex + 1
       if length(str) - strIndex
@@ -36,6 +37,9 @@ loop positive(length(file) - line#)
       end
     end
     lineIndex < lineIndex + 1
+    if original# - strIndex
+      strIndex < 0
+    end
   end
   line# < line# + 1
 end
