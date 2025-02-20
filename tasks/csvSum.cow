@@ -16,3 +16,4 @@ loop positive(length(names) - col#)
   print(names[col#])
   print(intToStr(result[col#]))
   col# < col# + 1
+end
