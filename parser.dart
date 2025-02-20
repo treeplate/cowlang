@@ -12,7 +12,9 @@ class TokenIterator implements Iterator<Token> {
   Token get current => _base.current;
 
   @override
-  bool moveNext() => _base.moveNext();
+  bool moveNext() {
+    return _base.moveNext();
+  }
   T? getT<T extends Token>() {
     if (current is T) {
       T result = current as T;

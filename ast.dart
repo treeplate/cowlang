@@ -44,14 +44,19 @@ class Scope {
 
 typedef CowFunction = Object? Function(List<Object?>, List<String> stackTrace);
 
-Never throwRuntimeException(String message, List<String> stackTrace) =>
-    throw Exception('$message\n${stackTrace.reversed.join('\n')}');
+Never throwRuntimeException(
+  String message,
+  List<String> stackTrace,
+  Token? token,
+) =>
+    throw Exception(
+      '$message${token == null ? '' : ' (./${token.position})'}\n${stackTrace.reversed.join('\n')}',
+    );
 
 abstract class Statement {
   final Token start;
 
   void run(Scope scope);
-
   Statement(this.start);
 }
 
@@ -88,12 +93,14 @@ class OrExpression extends Expression {
       throwRuntimeException(
         'lhs of or is not integer (is $lhsValue)',
         scope.stackTrace,
+        lhs.start,
       );
     }
     if (rhsValue is! int) {
       throwRuntimeException(
         'rhs of or is not integer (is $rhsValue)',
         scope.stackTrace,
+        rhs.start,
       );
     }
     return lhsValue | rhsValue;
@@ -116,12 +123,14 @@ class XorExpression extends Expression {
       throwRuntimeException(
         'lhs of xor is not integer (is $lhsValue)',
         scope.stackTrace,
+        lhs.start,
       );
     }
     if (rhsValue is! int) {
       throwRuntimeException(
         'rhs of xor is not integer (is $rhsValue)',
         scope.stackTrace,
+        rhs.start,
       );
     }
     return lhsValue ^ rhsValue;
@@ -144,12 +153,14 @@ class AndExpression extends Expression {
       throwRuntimeException(
         'lhs of and is not integer (is $lhsValue)',
         scope.stackTrace,
+        lhs.start,
       );
     }
     if (rhsValue is! int) {
       throwRuntimeException(
         'rhs of and is not integer (is $rhsValue)',
         scope.stackTrace,
+        rhs.start,
       );
     }
     return lhsValue & rhsValue;
@@ -172,12 +183,14 @@ class MultiplyExpression extends Expression {
       throwRuntimeException(
         'lhs of multiply is not integer (is $lhsValue)',
         scope.stackTrace,
+        lhs.start,
       );
     }
     if (rhsValue is! int) {
       throwRuntimeException(
         'rhs of multiply is not integer (is $rhsValue)',
         scope.stackTrace,
+        rhs.start,
       );
     }
     return lhsValue * rhsValue;
@@ -199,12 +212,14 @@ class DivideExpression extends Expression {
       throwRuntimeException(
         'lhs of divide is not integer (is $lhsValue)',
         scope.stackTrace,
+        lhs.start,
       );
     }
     if (rhsValue is! int) {
       throwRuntimeException(
         'rhs of divide is not integer (is $rhsValue)',
         scope.stackTrace,
+        rhs.start,
       );
     }
     return lhsValue ~/ rhsValue;
@@ -226,12 +241,14 @@ class ModulusExpression extends Expression {
       throwRuntimeException(
         'lhs of modulus is not integer (is $lhsValue)',
         scope.stackTrace,
+        lhs.start,
       );
     }
     if (rhsValue is! int) {
       throwRuntimeException(
         'rhs of modulus is not integer (is $rhsValue)',
         scope.stackTrace,
+        rhs.start,
       );
     }
     return lhsValue % rhsValue;
@@ -253,12 +270,14 @@ class AddExpression extends Expression {
       throwRuntimeException(
         'lhs of add is not integer (is $lhsValue)',
         scope.stackTrace,
+        lhs.start,
       );
     }
     if (rhsValue is! int) {
       throwRuntimeException(
         'rhs of add is not integer (is $rhsValue)',
         scope.stackTrace,
+        rhs.start,
       );
     }
     return lhsValue + rhsValue;
@@ -280,12 +299,14 @@ class SubtractExpression extends Expression {
       throwRuntimeException(
         'lhs of subtract is not integer (is $lhsValue)',
         scope.stackTrace,
+        lhs.start,
       );
     }
     if (rhsValue is! int) {
       throwRuntimeException(
         'rhs of subtract is not integer (is $rhsValue)',
         scope.stackTrace,
+        rhs.start,
       );
     }
     return lhsValue - rhsValue;
@@ -307,15 +328,21 @@ class IndexExpression extends Expression {
       throwRuntimeException(
         'lhs of index is not list (is $lhsValue)',
         scope.stackTrace,
+        lhs.start,
       );
     }
     if (rhsValue is! int) {
       throwRuntimeException(
         'rhs of index is not integer (is $rhsValue)',
         scope.stackTrace,
+        rhs.start,
       );
     }
-    return lhsValue[rhsValue];
+    try {
+      return lhsValue[rhsValue];
+    } catch (error) {
+      throwRuntimeException(error.toString(), scope.stackTrace, rhs.start);
+    }
   }
 }
 
@@ -333,6 +360,7 @@ class CallExpression extends Expression {
       throwRuntimeException(
         'lhs of call is not function (is $lhsValue) at ./${lhs.start.position}',
         scope.stackTrace,
+        lhs.start,
       );
     }
     scope.setStackTracePosition(start);
@@ -419,12 +447,14 @@ class FunctionStatement extends Statement {
         throwRuntimeException(
           'Not enough arguments provided to $name',
           funcScope.stackTrace,
+          start,
         );
       }
       if (args.length > params.length) {
         throwRuntimeException(
           'Too many arguments provided to $name',
           funcScope.stackTrace,
+          start,
         );
       }
       int i = 0;

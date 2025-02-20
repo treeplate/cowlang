@@ -226,6 +226,8 @@ Iterable<Token> tokenize(String file, String filename) sync* {
           yield StringToken(buffer.toString(), line, column, filename);
           buffer.clear();
           state = _LexerState.top;
+        } else if (chars.current == '\x00') {
+          throwCompileTimeException('Unterminated string.', StringToken(buffer.toString(), line, column, filename));
         } else {
           buffer.write(chars.current);
         }

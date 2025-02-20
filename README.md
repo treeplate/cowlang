@@ -29,6 +29,10 @@ The statement is evaluating the expression and assigning it to a new variable.
 First, parse an expression (the condition).
 Then, parse statements until there is an identifier `end`. (the block).
 The statement is executing the block only if the condition evaluates to 0.
+### Starting with identifier `loop`
+First, parse an expression (the condition).
+Then, parse statements until there is an identifier `end`. (the block).
+The statement is repeatedly executing the block until the condition does not evaluate to 0.
 ### Other
 First, parse an expression.
 If that expression is assignable (indexing or variable) and the next token is `<`, parse another expression. The statement is assigning the second expression to the first expression.
