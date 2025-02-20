@@ -214,20 +214,29 @@ Iterable<Token> tokenize(String file, String filename) sync* {
       case _LexerState.comment:
         if (chars.current == '\\') {
           state = _LexerState.commentEscape;
-        } else if (chars.current.endsWith('\n')) {
+          next();
+        } else if (chars.current.endsWith('\n') || chars.current == '\x00') {
           state = _LexerState.top;
+        } else {
+          next();
         }
-        next();
       case _LexerState.commentEscape:
-        state = _LexerState.comment;
-        next();
+        if (chars.current == '\x00') {
+          state = _LexerState.top;
+        } else {
+          state = _LexerState.comment;
+          next();
+        }
       case _LexerState.string:
         if (chars.current == '\'') {
           yield StringToken(buffer.toString(), line, column, filename);
           buffer.clear();
           state = _LexerState.top;
         } else if (chars.current == '\x00') {
-          throwCompileTimeException('Unterminated string.', StringToken(buffer.toString(), line, column, filename));
+          throwCompileTimeException(
+            'Unterminated string.',
+            StringToken(buffer.toString(), line, column, filename),
+          );
         } else {
           buffer.write(chars.current);
         }
