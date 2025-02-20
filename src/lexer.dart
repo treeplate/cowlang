@@ -43,8 +43,6 @@ enum SymbolType {
   openparen,
   closeparen,
 
-  comma,
-
   plus,
   minus,
   star,
@@ -70,8 +68,6 @@ class SymbolToken extends Token {
         return '(';
       case SymbolType.closeparen:
         return ')';
-      case SymbolType.comma:
-        return ',';
       case SymbolType.plus:
         return '+';
       case SymbolType.minus:
@@ -112,7 +108,7 @@ enum _LexerState {
   commentEscape,
 }
 
-Characters identifierEndings = " \t\n\r\n[](),+-*/%&|^<\x00".characters;
+Characters identifierEndings = " \t\n\r\n[]()+-*/%&|^<\x00".characters;
 Iterable<Token> tokenize(String file, String filename) sync* {
   int line = 1;
   int column = 1;
@@ -148,9 +144,6 @@ Iterable<Token> tokenize(String file, String filename) sync* {
             next();
           case ')':
             yield SymbolToken(SymbolType.closeparen, line, column, filename);
-            next();
-          case ',':
-            yield SymbolToken(SymbolType.comma, line, column, filename);
             next();
           case '+':
             yield SymbolToken(SymbolType.plus, line, column, filename);

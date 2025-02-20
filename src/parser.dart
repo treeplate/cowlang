@@ -15,6 +15,7 @@ class TokenIterator implements Iterator<Token> {
   bool moveNext() {
     return _base.moveNext();
   }
+
   T? getT<T extends Token>() {
     if (current is T) {
       T result = current as T;
@@ -329,17 +330,24 @@ Expression parseBasicExpression(
     case IntegerToken():
       return IntegerExpression(token);
     case SymbolToken(type: SymbolType type):
-      if (type != SymbolType.openparen) {
-        continue defaultLabel;
+      if (type == SymbolType.openparen) {
+        Expression expr = parseExpression(tokens, scope);
+        if (!tokens.getSymbol(SymbolType.closeparen)) {
+          throwCompileTimeException(
+            'expected ), got ${tokens.current}',
+            tokens.current,
+          );
+        }
+        return expr;
       }
-      Expression expr = parseExpression(tokens, scope);
-      if (!tokens.getSymbol(SymbolType.closeparen)) {
-        throwCompileTimeException(
-          'expected ), got ${tokens.current}',
-          tokens.current,
-        );
+      if (type == SymbolType.opensquare) {
+        List<Expression> list = [];
+        while (!tokens.getSymbol(SymbolType.closesquare)) {
+          list.add(parseExpression(tokens, scope, null));
+        }
+        return ListExpression(token, list);
       }
-      return expr;
+      continue defaultLabel;
     defaultLabel:
     default:
       throw UnimplementedError('basic $token');

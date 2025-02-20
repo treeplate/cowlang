@@ -6,13 +6,13 @@ Strings are `'`-delimeted with no escapes.
 ## Integers
 Integers are sequences of the following characters: `0123456789`. This is required to fit in 63 bits.
 ## Symbols
-Symbols are the following characters: `[](),+-*/%&|^<`.
+Symbols are the following characters: `[]()+-*/%&|^<`.
 ## Comments
 `//` denotes the start of a comment, which ends at the first newline (0xa) that isn't preceded by a `\`.
 ## Whitespace
 Spaces (0x20), tabs (0x9), carriage returns (0xd), and newlines (0xa) are ignored
 ## Identifiers
-Any other character marks the start of an identifier, which ends at a space, tab, carriage return, newline, or any of the following characters: `[](),+-*/%&|^<`.
+Any other character marks the start of an identifier, which ends at a space, tab, carriage return, newline, or any of the following characters: `[]()+-*/%&|^<`.
 # Parsing
 ## Statements
 These tokens are parsed into a set of statements, which are parsed the following way:

@@ -376,7 +376,7 @@ class CallExpression extends Expression {
   bool get isAssignable => false;
   final Expression lhs;
   final List<Expression> args;
-  String toString() => '$lhs(${args.join(', ')})';
+  String toString() => '$lhs(${args.join(' ')})';
 
   CallExpression(super.start, this.lhs, this.args);
   @override
@@ -391,6 +391,18 @@ class CallExpression extends Expression {
     }
     scope.setStackTracePosition(start);
     return lhsValue(args.map((e) => e.eval(scope)).toList(), scope.stackTrace);
+  }
+}
+
+class ListExpression extends Expression {
+  bool get isAssignable => false;
+  final List<Expression> list;
+  String toString() => '[${list.join(' ')}]';
+
+  ListExpression(super.start, this.list);
+  @override
+  Object? eval(Scope scope) {
+    return [...list.map((e) => e.eval(scope)).toList()];
   }
 }
 
